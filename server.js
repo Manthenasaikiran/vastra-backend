@@ -16,23 +16,26 @@ const app = express();
 
 /* ================= MIDDLEWARE ================= */
 
-app.use(cors({
-  origin: "*"
-}));
-
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 /* ================= DATABASE ================= */
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("✅ MongoDB Connected");
-  })
-  .catch((err) => {
-    console.log("❌ MongoDB Error:", err);
-    process.exit(1);
-  });
+mongoose.connect(process.env.MONGO_URI)
+
+.then(() => {
+
+  console.log("✅ MongoDB Connected");
+
+  startServer();
+
+})
+
+.catch((err) => {
+
+  console.log("❌ MongoDB Connection Error:", err);
+
+});
 
 /* ================= RAZORPAY ================= */
 
@@ -73,7 +76,7 @@ app.get("/api/products", async (req, res) => {
 
   } catch (error) {
 
-    console.log("Products error:", error);
+    console.log("Products API Error:", error);
 
     res.status(500).json({
       message: "Error fetching products"
@@ -94,6 +97,8 @@ app.post("/api/products", async (req, res) => {
     res.json(product);
 
   } catch (error) {
+
+    console.log("Product creation error:", error);
 
     res.status(500).json({
       message: "Product creation failed"
@@ -231,6 +236,8 @@ app.post("/api/signup", async (req, res) => {
 
   } catch (error) {
 
+    console.log("Signup error:", error);
+
     res.status(500).json({
       message: "Signup failed"
     });
@@ -281,6 +288,8 @@ app.post("/api/login", async (req, res) => {
 
   } catch (error) {
 
+    console.log("Login error:", error);
+
     res.status(500).json({
       message: "Login failed"
     });
@@ -301,6 +310,8 @@ app.get("/api/orders", async (req, res) => {
 
   } catch (error) {
 
+    console.log("Orders error:", error);
+
     res.status(500).json({
       message: "Error fetching orders"
     });
@@ -309,15 +320,19 @@ app.get("/api/orders", async (req, res) => {
 
 });
 
-/* ================= SERVER ================= */
+/* ================= START SERVER ================= */
 
-const PORT = process.env.PORT || 5000;
+function startServer() {
 
-app.listen(PORT, () => {
+  const PORT = process.env.PORT || 5000;
 
-  console.log("=================================");
-  console.log("🚀 Vastra Backend Running");
-  console.log("🌐 Port:", PORT);
-  console.log("=================================");
+  app.listen(PORT, () => {
 
-});
+    console.log("=================================");
+    console.log("🚀 Vastra Backend Running");
+    console.log("🌐 Port:", PORT);
+    console.log("=================================");
+
+  });
+
+}
