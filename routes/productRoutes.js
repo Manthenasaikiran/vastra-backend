@@ -1,11 +1,12 @@
 const express = require("express");
-const Product = require("../models/Product");
-
 const router = express.Router();
 
-/* GET PRODUCTS */
+const Product = require("../models/Product");
 
-router.get("/", async (req, res) => {
+
+/* GET ALL PRODUCTS */
+
+router.get("/products", async (req, res) => {
 
   try {
 
@@ -15,15 +16,18 @@ router.get("/", async (req, res) => {
 
   } catch (error) {
 
-    res.status(500).json({ message: "Failed to fetch products" });
+    res.status(500).json({
+      message: "Error fetching products"
+    });
 
   }
 
 });
 
+
 /* ADD PRODUCT */
 
-router.post("/", async (req, res) => {
+router.post("/products", async (req, res) => {
 
   try {
 
@@ -33,10 +37,13 @@ router.post("/", async (req, res) => {
 
   } catch (error) {
 
-    res.status(500).json({ message: "Product creation failed" });
+    res.status(500).json({
+      message: "Product creation failed"
+    });
 
   }
 
 });
+
 
 module.exports = router;
