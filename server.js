@@ -16,22 +16,26 @@ const app = express();
 /* ================= MIDDLEWARE ================= */
 
 app.use(cors({
-  origin: "*"
+  origin: "*",
+  methods: ["GET","POST","PUT","DELETE"],
+  credentials: true
 }));
 
 app.use(express.json());
 
 /* ================= DATABASE ================= */
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("✅ MongoDB Connected");
-  })
-  .catch((err) => {
-    console.log("❌ MongoDB Error:", err);
-    process.exit(1);
-  });
+mongoose.connect(process.env.MONGO_URI,{
+  useNewUrlParser:true,
+  useUnifiedTopology:true
+})
+.then(()=>{
+  console.log("✅ MongoDB Connected");
+})
+.catch((err)=>{
+  console.log("❌ MongoDB Error:",err);
+  process.exit(1);
+});
 
 /* ================= RAZORPAY ================= */
 
@@ -40,49 +44,52 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-/* ================= ROOT ROUTE ================= */
+/* ================= ROOT ================= */
 
-app.get("/", (req, res) => {
-  res.send("🚀 Vastra Backend API Running");
+app.get("/",(req,res)=>{
+  res.json({
+    message:"🚀 Vastra Backend API Running",
+    status:"OK"
+  });
 });
 
-/* ================= HEALTH CHECK ================= */
+/* ================= HEALTH ================= */
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health",(req,res)=>{
   res.json({
-    status: "Server running",
-    time: new Date(),
+    status:"Server Running",
+    time:new Date()
   });
 });
 
 /* ================= CREATE ORDER ================= */
 
-app.post("/api/create-order", async (req, res) => {
+app.post("/api/create-order",async(req,res)=>{
 
-  try {
+  try{
 
     const { amount } = req.body;
 
-    if (!amount) {
+    if(!amount){
       return res.status(400).json({
-        message: "Amount required",
+        message:"Amount required"
       });
     }
 
     const order = await razorpay.orders.create({
-      amount: amount * 100,
-      currency: "INR",
-      receipt: "receipt_" + Date.now(),
+      amount:amount*100,
+      currency:"INR",
+      receipt:"receipt_"+Date.now()
     });
 
     res.json(order);
 
-  } catch (error) {
+  }catch(error){
 
-    console.log("Create Order Error:", error);
+    console.log("Create Order Error:",error);
 
     res.status(500).json({
-      message: "Order creation failed",
+      message:"Order creation failed"
     });
 
   }
@@ -91,9 +98,9 @@ app.post("/api/create-order", async (req, res) => {
 
 /* ================= VERIFY PAYMENT ================= */
 
-app.post("/api/verify-payment", async (req, res) => {
+app.post("/api/verify-payment",async(req,res)=>{
 
-  try {
+  try{
 
     const {
       razorpay_order_id,
@@ -107,42 +114,42 @@ app.post("/api/verify-payment", async (req, res) => {
     const body = razorpay_order_id + "|" + razorpay_payment_id;
 
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .createHmac("sha256",process.env.RAZORPAY_KEY_SECRET)
       .update(body)
       .digest("hex");
 
-    if (expectedSignature === razorpay_signature) {
+    if(expectedSignature === razorpay_signature){
 
       const order = await Order.create({
-        items: cart,
+        items:cart,
         total,
-        paymentId: razorpay_payment_id,
-        orderId: razorpay_order_id,
+        paymentId:razorpay_payment_id,
+        orderId:razorpay_order_id,
         user,
-        status: "Paid",
-        createdAt: new Date()
+        status:"Paid",
+        createdAt:new Date()
       });
 
       res.json({
-        success: true,
+        success:true,
         order
       });
 
-    } else {
+    }else{
 
       res.status(400).json({
-        success: false,
-        message: "Invalid payment signature"
+        success:false,
+        message:"Invalid payment signature"
       });
 
     }
 
-  } catch (error) {
+  }catch(error){
 
-    console.log("Verification Error:", error);
+    console.log("Payment Verification Error:",error);
 
     res.status(500).json({
-      message: "Payment verification failed"
+      message:"Payment verification failed"
     });
 
   }
@@ -151,59 +158,55 @@ app.post("/api/verify-payment", async (req, res) => {
 
 /* ================= SIGNUP ================= */
 
-app.post("/api/signup", async (req, res) => {
+app.post("/api/signup",async(req,res)=>{
 
-  try {
+  try{
 
-    const { name, email, password } = req.body;
+    const { name,email,password } = req.body;
 
-    if (!name || !email || !password) {
-
+    if(!name || !email || !password){
       return res.status(400).json({
-        message: "All fields required"
+        message:"All fields required"
       });
-
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({email});
 
-    if (existingUser) {
-
+    if(existingUser){
       return res.status(400).json({
-        message: "Email already exists"
+        message:"Email already exists"
       });
-
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password,10);
 
     const user = await User.create({
       name,
       email,
-      password: hashedPassword
+      password:hashedPassword
     });
 
     const token = jwt.sign(
-      { id: user._id },
+      { id:user._id },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn:"7d" }
     );
 
     res.json({
-      message: "Signup successful",
+      message:"Signup successful",
       token,
-      user: {
-        name: user.name,
-        email: user.email
+      user:{
+        name:user.name,
+        email:user.email
       }
     });
 
-  } catch (error) {
+  }catch(error){
 
-    console.log("Signup Error:", error);
+    console.log("Signup Error:",error);
 
     res.status(500).json({
-      message: "Signup failed"
+      message:"Signup failed"
     });
 
   }
@@ -212,53 +215,49 @@ app.post("/api/signup", async (req, res) => {
 
 /* ================= LOGIN ================= */
 
-app.post("/api/login", async (req, res) => {
+app.post("/api/login",async(req,res)=>{
 
-  try {
+  try{
 
-    const { email, password } = req.body;
+    const { email,password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({email});
 
-    if (!user) {
-
+    if(!user){
       return res.status(400).json({
-        message: "User not found"
+        message:"User not found"
       });
-
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password,user.password);
 
-    if (!isMatch) {
-
+    if(!isMatch){
       return res.status(400).json({
-        message: "Invalid password"
+        message:"Invalid password"
       });
-
     }
 
     const token = jwt.sign(
-      { id: user._id },
+      { id:user._id },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn:"7d" }
     );
 
     res.json({
-      message: "Login successful",
+      message:"Login successful",
       token,
-      user: {
-        name: user.name,
-        email: user.email
+      user:{
+        name:user.name,
+        email:user.email
       }
     });
 
-  } catch (error) {
+  }catch(error){
 
-    console.log("Login Error:", error);
+    console.log("Login Error:",error);
 
     res.status(500).json({
-      message: "Login failed"
+      message:"Login failed"
     });
 
   }
@@ -267,18 +266,20 @@ app.post("/api/login", async (req, res) => {
 
 /* ================= GET ORDERS ================= */
 
-app.get("/api/orders", async (req, res) => {
+app.get("/api/orders",async(req,res)=>{
 
-  try {
+  try{
 
-    const orders = await Order.find().sort({ createdAt: -1 });
+    const orders = await Order.find().sort({createdAt:-1});
 
     res.json(orders);
 
-  } catch (error) {
+  }catch(error){
+
+    console.log("Fetch Orders Error:",error);
 
     res.status(500).json({
-      message: "Error fetching orders"
+      message:"Error fetching orders"
     });
 
   }
@@ -289,11 +290,11 @@ app.get("/api/orders", async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT,()=>{
 
   console.log("=================================");
   console.log("🚀 Vastra Backend Running");
-  console.log("🌐 Port:", PORT);
+  console.log("🌐 Port:",PORT);
   console.log("=================================");
 
 });
