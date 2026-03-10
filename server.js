@@ -42,6 +42,7 @@ const razorpay = new Razorpay({
 });
 
 /* ================= ROOT ================= */
+app.use(express.json());
 
 app.get("/",(req,res)=>{
   res.json({
