@@ -1,22 +1,42 @@
-import express from "express";
-import Product from "../models/Product.js";
+const express = require("express");
+const Product = require("../models/Product");
 
 const router = express.Router();
 
-router.get("/", async(req,res)=>{
+/* GET PRODUCTS */
 
-  const products = await Product.find();
-  res.json(products);
+router.get("/", async (req, res) => {
+
+  try {
+
+    const products = await Product.find();
+
+    res.json(products);
+
+  } catch (error) {
+
+    res.status(500).json({ message: "Failed to fetch products" });
+
+  }
 
 });
 
-router.post("/", async(req,res)=>{
+/* ADD PRODUCT */
 
-  const product = new Product(req.body);
-  await product.save();
+router.post("/", async (req, res) => {
 
-  res.json(product);
+  try {
+
+    const product = await Product.create(req.body);
+
+    res.json(product);
+
+  } catch (error) {
+
+    res.status(500).json({ message: "Product creation failed" });
+
+  }
 
 });
 
-export default router;
+module.exports = router;
