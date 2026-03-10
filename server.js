@@ -26,23 +26,21 @@ app.use(express.json());
 /* ================= DATABASE ================= */
 
 mongoose.connect(process.env.MONGO_URI)
-.then(() => {
+.then(()=>{
   console.log("✅ MongoDB Connected");
 })
-.catch((err) => {
-  console.log("❌ MongoDB Error:", err);
-  process.exit(1);
+.catch((err)=>{
+  console.log("❌ MongoDB Error:",err);
 });
 
 /* ================= RAZORPAY ================= */
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
 /* ================= ROOT ================= */
-app.use(express.json());
 
 app.get("/",(req,res)=>{
   res.json({
@@ -66,7 +64,7 @@ app.post("/api/create-order",async(req,res)=>{
 
   try{
 
-    const { amount } = req.body;
+    const {amount} = req.body;
 
     if(!amount){
       return res.status(400).json({
@@ -75,7 +73,7 @@ app.post("/api/create-order",async(req,res)=>{
     }
 
     const order = await razorpay.orders.create({
-      amount:amount*100,
+      amount: amount * 100,
       currency:"INR",
       receipt:"receipt_"+Date.now()
     });
@@ -112,9 +110,9 @@ app.post("/api/verify-payment",async(req,res)=>{
     const body = razorpay_order_id + "|" + razorpay_payment_id;
 
     const expectedSignature = crypto
-      .createHmac("sha256",process.env.RAZORPAY_KEY_SECRET)
-      .update(body)
-      .digest("hex");
+    .createHmac("sha256",process.env.RAZORPAY_KEY_SECRET)
+    .update(body)
+    .digest("hex");
 
     if(expectedSignature === razorpay_signature){
 
@@ -160,7 +158,7 @@ app.post("/api/signup",async(req,res)=>{
 
   try{
 
-    const { name,email,password } = req.body;
+    const {name,email,password} = req.body;
 
     if(!name || !email || !password){
       return res.status(400).json({
@@ -185,9 +183,9 @@ app.post("/api/signup",async(req,res)=>{
     });
 
     const token = jwt.sign(
-      { id:user._id },
+      {id:user._id},
       process.env.JWT_SECRET,
-      { expiresIn:"7d" }
+      {expiresIn:"7d"}
     );
 
     res.json({
@@ -217,7 +215,7 @@ app.post("/api/login",async(req,res)=>{
 
   try{
 
-    const { email,password } = req.body;
+    const {email,password} = req.body;
 
     const user = await User.findOne({email});
 
@@ -236,9 +234,9 @@ app.post("/api/login",async(req,res)=>{
     }
 
     const token = jwt.sign(
-      { id:user._id },
+      {id:user._id},
       process.env.JWT_SECRET,
-      { expiresIn:"7d" }
+      {expiresIn:"7d"}
     );
 
     res.json({
@@ -273,8 +271,6 @@ app.get("/api/orders",async(req,res)=>{
     res.json(orders);
 
   }catch(error){
-
-    console.log("Fetch Orders Error:",error);
 
     res.status(500).json({
       message:"Error fetching orders"
